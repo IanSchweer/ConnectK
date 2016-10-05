@@ -1,3 +1,4 @@
+import java.util.Random;
 import connectK.CKPlayer;
 import connectK.BoardModel;
 import java.awt.Point;
@@ -9,13 +10,22 @@ public class TayChiAI extends CKPlayer {
 		teamName = "DummyAI";
 	}
 
+    private int getRandomInteger(int max) {
+        Random r = new Random();
+        return Math.abs(r.nextInt()) % max;
+    }
+
 	@Override
 	public Point getMove(BoardModel state) {
-		for(int i=0; i<state.getWidth(); ++i)
-			for(int j=0; j<state.getHeight(); ++j)
-				if(state.getSpace(i, j) == 0)
-					return new Point(i,j);
-		return null;
+        int taken = 1, maxGuess = (state.getWidth() + state.getHeight()) * 1000, x = -1, y = -1;
+        Point move = null;
+        while (taken != 0) {
+            x = getRandomInteger(state.getWidth());
+            y = getRandomInteger(state.getHeight());
+            taken = state.getSpace(x, y);
+        }
+        move = new Point(x, y);
+        return move;
 	}
 
 	@Override
