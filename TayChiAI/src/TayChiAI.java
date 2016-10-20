@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Random;
 import connectK.CKPlayer;
 import connectK.BoardModel;
@@ -33,13 +34,47 @@ public class TayChiAI extends CKPlayer {
 
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
-		ArrayList<BoardModel> states = this.getStates(state);
-		return getMove(state);
+		return minMax(state, 5);
 	}
 	
+	private Point minMax(BoardModel state, int depth) {
+		BoardModel newState = maxDecision(state, depth - 1);
+		return newState.lastMove;
+	}
+	
+	// @todo: Add terminal state checks for decisions
+	private BoardModel maxDecision(BoardModel state, int depth) {
+		if (depth <= 0) return state;
+		int max = Integer.MIN_VALUE;
+		BoardModel maxDecision = state;
+		ArrayList<BoardModel> states = this.getStates(state);
+		for (BoardModel newState : states) {
+			int newStateScore = score(minDecision(newState, depth - 1));
+			if (newStateScore >= max) {
+				max = newStateScore;
+				maxDecision = newState;
+			}
+		}
+		return maxDecision;
+	}
+	
+	private BoardModel minDecision(BoardModel state, int depth) {
+		if (depth <= 0) return state;
+		int min = Integer.MIN_VALUE;
+		BoardModel minDecision = state;
+		ArrayList<BoardModel> states = this.getStates(state);
+		for (BoardModel newState : states) {
+			int newStateScore = score(maxDecision(newState, depth - 1));
+			if (newStateScore <= min) {
+				min = newStateScore;
+				minDecision = newState;
+			}
+		}
+		return minDecision;
+	}
 	private BoardModel generateState(BoardModel state, int x, int y) {
-		BoardModel newState = state.clone();
-		newState.placePiece(new Point(x, y), this.player);
+		// undocumented, but placePiece will generate a new board.
+		BoardModel newState = state.placePiece(new Point(x, y), this.player);
 		return newState;
 	}
 	
@@ -49,8 +84,10 @@ public class TayChiAI extends CKPlayer {
 		if (state.gravityEnabled()) {
 			// the board will ensure points sink.
 			for (int i = 0; i < state.getWidth(); i++) {
-				states.add(this.generateState(state, i, state.getHeight() - 1));
-				System.out.println(score(states.get(states.size() - 1)));
+				if (state.getSpace(i, 0) == 0) {
+					states.add(this.generateState(state, i, 0));
+					System.out.println(score(states.get(states.size() - 1)));
+				}
 			}
 		} else {
 			// we can consider any move.
