@@ -8,14 +8,35 @@ import java.awt.Point;
 public class TayChiAI extends CKPlayer {
 
     private byte player;
+    private byte opponent;
+    private int numRows;
+    private int numCols;
+
+    private int[][] numContiguousSpaces;
+
+    private class Move {
+    	int row = -1,  col = -1;
+    	Move(int row, int col) {
+    		this.row = row;
+    		this.col = col;
+    	}
+    }
+
 	public TayChiAI(byte player, BoardModel state) {
 		super(player, state);
-		teamName = "DummyAI";
+		this.teamName = "TayChiAI";
         this.player = player;
+        this.opponent = getOpponent(player);
+        this.numRows = state.width;
+        this.numCols = state.height;
+	}
+
+	private byte getOpponent(byte player) {
+		return (player != (byte) 1 ? (byte) 1 : (byte) 2);
 	}
 
     private int getRandomInteger(int max) {
-        Random r = new Random();
+    	Random r = new Random();
         return Math.abs(r.nextInt()) % max;
     }
 
@@ -34,7 +55,7 @@ public class TayChiAI extends CKPlayer {
 
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
-		return minMax(state, 5);
+		return minMax(state, 3);
 	}
 	
 	private Point minMax(BoardModel state, int depth) {
@@ -73,6 +94,7 @@ public class TayChiAI extends CKPlayer {
 		return minDecision;
 	}
 	private BoardModel generateState(BoardModel state, int x, int y) {
+		System.out.println(String.format("Attempting to generate nextState at %d, %d", x, y));
 		// undocumented, but placePiece will generate a new board.
 		BoardModel newState = state.placePiece(new Point(x, y), this.player);
 		return newState;
@@ -81,21 +103,14 @@ public class TayChiAI extends CKPlayer {
 	private ArrayList<BoardModel> getStates(BoardModel state) {
 		// @todo: Add utility function.
 		ArrayList<BoardModel> states = new ArrayList<>();
-		if (state.gravityEnabled()) {
-			// the board will ensure points sink.
-			for (int i = 0; i < state.getWidth(); i++) {
-				if (state.getSpace(i, 0) == 0) {
-					states.add(this.generateState(state, i, 0));
-					System.out.println(score(states.get(states.size() - 1)));
-				}
-			}
-		} else {
-			// we can consider any move.
-			for (int i = 0; i < state.getWidth(); i++) {
-				for (int j = 0; j < state.getHeight(); j++) {
-					if (state.getSpace(i, j) == 0) {
+		final int TARGET_WIDTH = state.getWidth(), TARGET_HEIGHT = state.getHeight();
+		for (int i = 0; i < TARGET_WIDTH; i++) {
+			for (int j = 0; j < TARGET_HEIGHT; j++) {
+				if (state.getSpace(i, j) == 0) {
+					// With gravity on, we only want the lowest unfilled row in 
+					// this column. Otherwise we can consider any spot.
+					if (!state.gravityEnabled() || (j == 0 || state.getSpace(i, j - 1) != 0)) {
 						states.add(this.generateState(state, i, j));
-						System.out.println(score(states.get(states.size() - 1)));
 					}
 				}
 			}
