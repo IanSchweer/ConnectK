@@ -12,23 +12,13 @@ public class TayChiAI extends CKPlayer {
     private int numRows;
     private int numCols;
 
-    private int[][] numContiguousSpaces;
-
-    private class Move {
-    	int row = -1,  col = -1;
-    	Move(int row, int col) {
-    		this.row = row;
-    		this.col = col;
-    	}
-    }
-
 	public TayChiAI(byte player, BoardModel state) {
 		super(player, state);
 		this.teamName = "TayChiAI";
-        this.player = player;
-        this.opponent = getOpponent(player);
-        this.numRows = state.width;
-        this.numCols = state.height;
+		this.player = player;
+		this.opponent = getOpponent(player);
+		this.numRows = state.width;
+		this.numCols = state.height;
 	}
 
 	private byte getOpponent(byte player) {
