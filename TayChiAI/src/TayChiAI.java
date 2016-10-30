@@ -49,36 +49,46 @@ public class TayChiAI extends CKPlayer {
     }
     
     private Point minMax(BoardModel state, int depth) {
-        BoardModel newState = maxDecision(state, depth - 1);
+        BoardModel newState = maxDecision(state, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE);
         return newState.lastMove;
     }
     
     // @todo: Add terminal state checks for decisions
-    private BoardModel maxDecision(BoardModel state, int depth) {
+    private BoardModel maxDecision(BoardModel state, int depth, int alpha, int beta) {
         if (depth <= 0) return state;
         int max = Integer.MIN_VALUE;
         BoardModel maxDecision = state;
         ArrayList<BoardModel> states = this.getStates(state);
         for (BoardModel newState : states) {
-            int newStateScore = score(minDecision(newState, depth - 1));
+            int newStateScore = score(minDecision(newState, depth - 1, alpha, beta));
             if (newStateScore >= max) {
                 max = newStateScore;
                 maxDecision = newState;
+            }
+            alpha = Math.max(alpha, max);
+            if (beta <= alpha) {
+                System.out.println("Prunning search tree - max");
+                break; // this will break the loop and prune the leaves.
             }
         }
         return maxDecision;
     }
     
-    private BoardModel minDecision(BoardModel state, int depth) {
+    private BoardModel minDecision(BoardModel state, int depth, int alpha, int beta) {
         if (depth <= 0) return state;
         int min = Integer.MIN_VALUE;
         BoardModel minDecision = state;
         ArrayList<BoardModel> states = this.getStates(state);
         for (BoardModel newState : states) {
-            int newStateScore = score(maxDecision(newState, depth - 1));
+            int newStateScore = score(maxDecision(newState, depth - 1, alpha, beta));
             if (newStateScore <= min) {
                 min = newStateScore;
                 minDecision = newState;
+            }
+            beta = min;
+            if (beta <= alpha) {
+                System.out.println("Prunning search tree - min");
+                break;
             }
         }
         return minDecision;
@@ -114,7 +124,7 @@ public class TayChiAI extends CKPlayer {
         // suck it.
         // This simple returns the largest numbers of contigous spots.
         int n = state.getWidth(), m = state.getHeight();
-        int max = Integer.MIN_VALUE;
+        int max = Integer.MIN_VALUE, min = Integer.MAX_VALUE;
         int[][] board = new int[n][m];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
@@ -130,7 +140,22 @@ public class TayChiAI extends CKPlayer {
                 }
             }
         }
+        board = new int[n][m];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                byte t = state.getSpace(i, j);
+                if (state.getSpace(i, j) != this.opponent) {
+                    board[i][j] = 0;
+                } else {
+                    board[i][j] = Math.max(
+                            board[Math.max(i - 1, 0)][j] + 1, 
+                            board[i][Math.max(j - 1, 0)] + 1
+                    );
+                    max = Math.max(board[i][j], max);
+                }
+            }
+        }
         
-        return max;
+        return max - min;
     }
 }
