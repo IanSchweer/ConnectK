@@ -11,7 +11,7 @@ public class TayChiAI extends CKPlayer {
     private byte opponent;
     private int numRows;
     private int numCols;
-
+	private int depth = 4;
     public TayChiAI(byte player, BoardModel state) {
         super(player, state);
         this.teamName = "TayChiAI";
@@ -32,76 +32,87 @@ public class TayChiAI extends CKPlayer {
 
     @Override
     public Point getMove(BoardModel state) {
-        int taken = 1, maxGuess = (state.getWidth() + state.getHeight()) * 1000, x = -1, y = -1;
-        Point move = null;
-        while (taken != 0) {
-            x = getRandomInteger(state.getWidth());
-            y = getRandomInteger(state.getHeight());
-            taken = state.getSpace(x, y);
-        }
-        move = new Point(x, y);
-        return move;
+		return minMax(state, depth);
     }
 
     @Override
     public Point getMove(BoardModel state, int deadline) {
-        return minMax(state, 3);
+        return minMax(state, depth);
     }
     
     private Point minMax(BoardModel state, int depth) {
-        BoardModel newState = maxDecision(state, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        BoardModel newState = maxDecision(state, depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
         return newState.lastMove;
     }
     
     // @todo: Add terminal state checks for decisions
     private BoardModel maxDecision(BoardModel state, int depth, int alpha, int beta) {
-        if (depth <= 0) return state;
         int max = Integer.MIN_VALUE;
         BoardModel maxDecision = state;
-        ArrayList<BoardModel> states = this.getStates(state);
-        for (BoardModel newState : states) {
-            int newStateScore = score(minDecision(newState, depth - 1, alpha, beta));
-            if (newStateScore >= max) {
-                max = newStateScore;
-                maxDecision = newState;
-            }
-            alpha = Math.max(alpha, max);
-            if (beta <= alpha) {
-                System.out.println("Prunning search tree - max");
-                break; // this will break the loop and prune the leaves.
-            }
-        }
-        return maxDecision;
+        ArrayList<BoardModel> states = this.getStates(state, this.player);
+		if (depth <= 0) {
+			for (BoardModel newState : states) {
+				int newStateScore = score(newState);
+				if (newStateScore >= max) {
+					max = newStateScore;
+					maxDecision = newState;
+				}
+			}
+			return maxDecision;
+		} else {
+			for (BoardModel newState : states) {
+				int newStateScore = score(minDecision(newState, depth - 1, alpha, beta));
+				if (newStateScore >= max) {
+					max = newStateScore;
+					maxDecision = newState;
+				}
+				alpha = Math.max(alpha, max);
+				if (beta <= alpha) {
+					System.out.println("Prunning search tree - max");
+					break; // this will break the loop and prune the leaves.
+				}
+			}
+			return maxDecision;
+		}
     }
     
     private BoardModel minDecision(BoardModel state, int depth, int alpha, int beta) {
-        if (depth <= 0) return state;
         int min = Integer.MIN_VALUE;
         BoardModel minDecision = state;
-        ArrayList<BoardModel> states = this.getStates(state);
-        for (BoardModel newState : states) {
-            int newStateScore = score(maxDecision(newState, depth - 1, alpha, beta));
-            if (newStateScore <= min) {
-                min = newStateScore;
-                minDecision = newState;
-            }
-            beta = min;
-            if (beta <= alpha) {
-                System.out.println("Prunning search tree - min");
-                break;
-            }
-        }
-        return minDecision;
+        ArrayList<BoardModel> states = this.getStates(state, this.opponent);
+        if (depth <= 0) {
+			for (BoardModel newState : states) {
+				int newStateScore = score(newState);
+				if (newStateScore <= min) {
+					min = newStateScore;
+					minDecision = newState;
+				}
+			}
+			return minDecision;
+		} else {
+			for (BoardModel newState : states) {
+				int newStateScore = score(maxDecision(newState, depth - 1, alpha, beta));
+				if (newStateScore <= min) {
+					min = newStateScore;
+					minDecision = newState;
+				}
+				beta = min;
+				if (beta <= alpha) {
+					System.out.println("Prunning search tree - min");
+					break;
+				}
+			}
+			return minDecision;
+		}
     }
 
-    private BoardModel generateState(BoardModel state, int x, int y) {
-        System.out.println(String.format("Attempting to generate nextState at %d, %d", x, y));
+    private BoardModel generateState(BoardModel state, int x, int y, byte player) {
         // undocumented, but placePiece will generate a new board.
-        BoardModel newState = state.placePiece(new Point(x, y), this.player);
+        BoardModel newState = state.placePiece(new Point(x, y), player);
         return newState;
     }
     
-    private ArrayList<BoardModel> getStates(BoardModel state) {
+    private ArrayList<BoardModel> getStates(BoardModel state, byte player) {
         // @todo: Add utility function.
         ArrayList<BoardModel> states = new ArrayList<>();
         final int TARGET_WIDTH = state.getWidth(), TARGET_HEIGHT = state.getHeight();
@@ -111,7 +122,7 @@ public class TayChiAI extends CKPlayer {
                     // With gravity on, we only want the lowest unfilled row in 
                     // this column. Otherwise we can consider any spot.
                     if (!state.gravityEnabled() || (j == 0 || state.getSpace(i, j - 1) != 0)) {
-                        states.add(this.generateState(state, i, j));
+                        states.add(this.generateState(state, i, j, player));
                     }
                 }
             }
@@ -124,11 +135,10 @@ public class TayChiAI extends CKPlayer {
         // suck it.
         // This simple returns the largest numbers of contigous spots.
         int n = state.getWidth(), m = state.getHeight();
-        int max = Integer.MIN_VALUE, min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE, min = Integer.MIN_VALUE;
         int[][] board = new int[n][m];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                byte t = state.getSpace(i, j);
                 if (state.getSpace(i, j) != this.player) {
                     board[i][j] = 0;
                 } else {
@@ -143,7 +153,6 @@ public class TayChiAI extends CKPlayer {
         board = new int[n][m];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                byte t = state.getSpace(i, j);
                 if (state.getSpace(i, j) != this.opponent) {
                     board[i][j] = 0;
                 } else {
@@ -151,11 +160,11 @@ public class TayChiAI extends CKPlayer {
                             board[Math.max(i - 1, 0)][j] + 1, 
                             board[i][Math.max(j - 1, 0)] + 1
                     );
-                    max = Math.max(board[i][j], max);
+                    min = Math.max(board[i][j], min);
                 }
             }
         }
-        
+		System.out.println("Min = " + min + " Max = " + max);
         return max - min;
     }
 }
