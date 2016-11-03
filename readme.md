@@ -1,6 +1,5 @@
 #ConnectK
 
-<<<<<<< HEAD
 ##Project Description
 ConnectK is an enhanced version of Connect4 [the board game](https://en.wikipedia.org/wiki/Connect_Four). ConnectK's width (**w**), height (**h**), and **K** are all configurable. ConnectK is also more interesting as it supports 2 different gravity modes: **ON | OFF**. With gravity off, the pieces stay wherever they are placed. With gravity on, they fall till they meet another piece or hit the bottom. The purpose of the project is for students to write AIs to compete in a tournament against other students.
 
@@ -171,4 +170,3 @@ Python users:
 	Write your ai in the make_move() method in dummyai.py.
 	Then start with the following command:
 		java -jar ConnectK.jar py:dummyai.py
->>>>>>> upstream/master
