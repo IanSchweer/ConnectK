@@ -130,6 +130,17 @@ public class TayChiAI extends CKPlayer {
         return states;
     }
     
+    private int scoreSetCount(BoardModel state) {
+        // this method is a little costly BUT
+        // 1. count all the groupings of 2,3,4,...,k-1 groupings in either
+        //  1. Horizontal
+        //  2. Vertical
+        //  3. Diagonial
+        // (note: a "grouping" is the maximum number of uninterrupted pieces on the board. xx, and x     x count as 2)
+        // 2. return a weighted linear combination of these metrics.
+        // most importantly, this is THREADABLE
+    }
+
     private int score(BoardModel state) {
         // we should consider gravity when scoring. But I'm not right now.
         // suck it.
