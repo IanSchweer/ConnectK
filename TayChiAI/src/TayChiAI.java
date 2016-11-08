@@ -52,7 +52,7 @@ public class TayChiAI extends CKPlayer {
         ArrayList<BoardModel> states = this.getStates(state, this.player);
 		if (depth <= 0) {
 			for (BoardModel newState : states) {
-				int newStateScore = score(newState);
+				int newStateScore = scoreSetCount(newState, this.player);
 				if (newStateScore >= max) {
 					max = newStateScore;
 					maxDecision = newState;
@@ -61,7 +61,7 @@ public class TayChiAI extends CKPlayer {
 			return maxDecision;
 		} else {
 			for (BoardModel newState : states) {
-				int newStateScore = score(minDecision(newState, depth - 1, alpha, beta));
+				int newStateScore = scoreSetCount(minDecision(newState, depth - 1, alpha, beta), this.player);
 				if (newStateScore >= max) {
 					max = newStateScore;
 					maxDecision = newState;
@@ -82,7 +82,7 @@ public class TayChiAI extends CKPlayer {
         ArrayList<BoardModel> states = this.getStates(state, this.opponent);
         if (depth <= 0) {
 			for (BoardModel newState : states) {
-				int newStateScore = score(newState);
+				int newStateScore = scoreSetCount(newState, this.opponent);
 				if (newStateScore <= min) {
 					min = newStateScore;
 					minDecision = newState;
@@ -91,7 +91,7 @@ public class TayChiAI extends CKPlayer {
 			return minDecision;
 		} else {
 			for (BoardModel newState : states) {
-				int newStateScore = score(maxDecision(newState, depth - 1, alpha, beta));
+				int newStateScore = scoreSetCount(maxDecision(newState, depth - 1, alpha, beta), this.opponent);
 				if (newStateScore <= min) {
 					min = newStateScore;
 					minDecision = newState;
@@ -130,7 +130,7 @@ public class TayChiAI extends CKPlayer {
         return states;
     }
     
-    private int scoreSetCount(BoardModel state) {
+    private int scoreSetCount(BoardModel state, byte player, byte opponent) {
         // this method is a little costly BUT
         // 1. count all the groupings of 2,3,4,...,k-1 groupings in either
         //  1. Horizontal
@@ -139,7 +139,85 @@ public class TayChiAI extends CKPlayer {
         // (note: a "grouping" is the maximum number of uninterrupted pieces on the board. xx, and x     x count as 2)
         // 2. return a weighted linear combination of these metrics.
         // most importantly, this is THREADABLE
+		float maxScore = horizontalScore(state, player) +
+			verticalScore(state, player) +
+			diagonalScore(state, player);
+		float minScore = horizontalScore(state, opponent) +
+			verticalScore(state, opponent) +
+			diagonalScore(state, opponent);
+		Math.floor(maxScore - minScore);
     }
+
+	private float verticalScore(BoardModel state, byte player) {
+		float score = Float.MIN_VALUE;
+		for (int i = 0; i < this.numRows; i++) {
+			int l = 0, r = 0, distance = Integer.MAX_VALUE;
+			int consecutive = 0, total_consecutive = 1;
+			for (l = 0; l < this.numCols && state.getSpace(i, l) != player; l++) { }
+			for (r = l + 1; r < this.numCols; r++) { 
+				if (r - l - 1 == distance) {
+					consecutive++;	
+				}
+				else if (state.getSpace(i, r) == player) {
+					// count the distance, move l;
+					distance = Math.min(distance, r - l - 1);
+					l = r;
+					total_consecutive = Math.max(consectuive, total_consecutive);
+					consecutive = 0;
+				}
+			}
+			score = Math.max((1.0f / distance) * total_consecutive, score);
+		}
+		return score;
+	}
+
+	private float horizontalScore(BoardModel state, byte player) {
+		float score = Float.MIN_VALUE;
+		for (int i = 0; i < this.numcols; i++) {
+			int l = 0, r = 0, distance = Integer.MAX_VALUE;
+			int consecutive = 0, total_consecutive = 1;
+			for (l = 0; l < this.numRows && state.getSpace(l, i) != player; l++) { }
+			for (r = l + 1; r < this.numCols; r++) { 
+				if (r - l - 1 == distance) {
+					consecutive++;	
+				}
+				else if (state.getSpace(r, i) == player) {
+					// count the distance, move l;
+					distance = Math.min(distance, r - l - 1);
+					l = r;
+					total_consecutive = Math.max(consectuive, total_consecutive);
+					consecutive = 0;
+				}
+			}
+			score = Math.max((1.0f / distance) * total_consecutive, score);
+		}
+		return score;
+	}
+
+	private float diagonalScore(BoardModel state, byte player) {
+		return 0.0f;
+		float score = Float.MIN_VALUE;
+		for (int i = 0; i < this.numcols; i++) {
+			int l = 0, r = 0, distance = Integer.MAX_VALUE;
+			int consecutive = 0, total_consecutive = 1;
+			for (l = 0; l < this.numRows && state.getSpace(l, i) != player; l++) { }
+			for (r = l + 1; r < this.numCols; r++) { 
+				if (r - l - 1 == distance) {
+					consecutive++;	
+				}
+				else if (state.getSpace(r, i) == player) {
+					// count the distance, move l;
+					distance = Math.min(distance, r - l - 1);
+					l = r;
+					total_consecutive = Math.max(consectuive, total_consecutive);
+					consecutive = 0;
+				}
+			}
+			score = Math.max((1.0f / distance) * total_consecutive, score);
+		}
+		return score;
+	}
+
 
     private int score(BoardModel state) {
         // we should consider gravity when scoring. But I'm not right now.
